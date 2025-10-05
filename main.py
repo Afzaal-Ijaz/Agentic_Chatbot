@@ -33,8 +33,9 @@ prompt = ChatPromptTemplate.from_messages([
     HumanMessage(content="{question}")
 ])
 
-chain = prompt | model
+chain = prompt | llm
 
-response = chain.invoke({"question": "what is ODI in cricket answer one line"})
+response = chain.invoke({"question": "what is  cricket answer one line"})
 
-print(response.content)
+ans = response.content
+print(ans)

@@ -7,3 +7,4 @@ dotenv
 fastapi
 uvicorn
 #------------------------------------
+ipykernel
