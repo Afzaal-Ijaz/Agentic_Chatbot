@@ -8,3 +8,6 @@ fastapi
 uvicorn
 #------------------------------------
 ipykernel
+pydantic
+requests 
+amadeus   
