@@ -10,4 +10,5 @@ uvicorn
 ipykernel
 pydantic
 requests 
-amadeus   
+amadeus 
+streamlit  
