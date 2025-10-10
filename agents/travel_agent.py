@@ -8,14 +8,14 @@ from langchain_core.messages import BaseMessage,HumanMessage
 # from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.prebuilt import ToolNode,tools_condition
 # from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import tool
 from dotenv import load_dotenv
 import os
 import requests
-import random
+import sqlite3
 os.environ["GRPC_VERBOSITY"] = "NONE"
 os.environ["GLOG_minloglevel"] = "3"
 
@@ -67,6 +67,12 @@ def chat_node(state: State):
 
 # print(State[messages])
 
+# Path to your existing database folder
+db_path = os.path.join(os.path.dirname(__file__), "..", "database", "chat.db")
+conn = sqlite3.connect(database=db_path ,check_same_thread=False)
+
+checkpointer = SqliteSaver(conn=conn)
+# thread_id = '1
 
 graph = StateGraph(State)
 
@@ -77,16 +83,13 @@ graph.add_node('chat_node', chat_node)
 graph.add_edge(START,'chat_node')
 graph.add_edge('chat_node',END)
 
-checkpointer = MemorySaver()
-
 
 chatbot = graph.compile(checkpointer=checkpointer)
-config1 = {"configurable": {'thread_id': '1'}}
+# config1 = {"configurable": {'thread_id': thread_id}}
 
-if __name__ == "__main__":
-    initial_state = {
-        'messages': [HumanMessage(content='define mobile in one line')]
-    }
+# initial_state = {
+#      'messages': [HumanMessage(content='define mobile in one line')]
+# }
 
-    res = chatbot.invoke(initial_state, config=config1)['messages'][-1].content
-    print(res)
+# res = chatbot.invoke(initial_state, config=config1)['messages'][-1].content
+# print(res)
