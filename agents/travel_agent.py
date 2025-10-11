@@ -2,44 +2,40 @@
 from typing import Annotated
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import BaseMessage,HumanMessage
-# from langchain_core.prompts import ChatPromptTemplate
+from utils.llm import llm, classifier_llm
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from prompts.system_prompt import classifier_prompt
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.prebuilt import ToolNode,tools_condition
-# from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import tool
-from dotenv import load_dotenv
 import os
 import requests
 import sqlite3
+
 os.environ["GRPC_VERBOSITY"] = "NONE"
 os.environ["GLOG_minloglevel"] = "3"
 
-load_dotenv()
-
-# LangChain looks for OPEN_AI_KEY automatically
-api_key = os.getenv("OPEN_AI_KEY")
-gen_api_key = os.getenv("GOOGLE_API_KEY")
-
-if not api_key:
-    raise ValueError(
-        "API key not found! Please set OPEN_AI_KEY in your .env file")
-
-
-# Initialize model
-model = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=gen_api_key)
 
 #define State
 class State(TypedDict):
     
     messages: Annotated[list[BaseMessage], add_messages]
+    
+# Define classify_query node (that classify user query in travel query or not)
+def classify_query(state: State):
+    """Classify user intent"""
+     # take user query 
+    user_message = state["messages"]
+    
+    messages = [
+        SystemMessage(content=classifier_prompt), user_message]
+    response = llm.invoke(messages)
+    return {"messages": [response]}
 
-
+# Define chat node (that response to user on travel reletad queries)
 def chat_node(state: State):
     # take user query 
     message = state['messages']
@@ -49,14 +45,25 @@ def chat_node(state: State):
     
     # response store in state
     return {'messages': [response]}
+
+# ✅ Define irrelevent node (for non-travel queries)
+def irrelevent_node(state:State):
+    return {
+        "messages": [
+            HumanMessage(
+                content="Sorry, I can only assist with travel-related queries like flights, hotels, and destinations."
+            )
+        ]
+    }
     
     
-# duck_tool = DuckDuckGoSearchRun()
+duck_tool = DuckDuckGoSearchRun()
+# print(duck.invoke("current weather in Lahore in Celcius degree"))
 
 
 # agent = create_react_agent(
 #     model="llm",
-#     tools=[get_flights],
+#     tools=[duck_tool],
 #     prompt="You are a helpful travel agent assistant"
 # )
 
@@ -72,7 +79,7 @@ db_path = os.path.join(os.path.dirname(__file__), "..", "database", "chat.db")
 conn = sqlite3.connect(database=db_path ,check_same_thread=False)
 
 checkpointer = SqliteSaver(conn=conn)
-# thread_id = '1
+# thread_id = '1'
 
 graph = StateGraph(State)
 
@@ -88,7 +95,7 @@ chatbot = graph.compile(checkpointer=checkpointer)
 # config1 = {"configurable": {'thread_id': thread_id}}
 
 # initial_state = {
-#      'messages': [HumanMessage(content='define mobile in one line')]
+#      'messages': [HumanMessage(content='define bike in one line')]
 # }
 
 # res = chatbot.invoke(initial_state, config=config1)['messages'][-1].content
