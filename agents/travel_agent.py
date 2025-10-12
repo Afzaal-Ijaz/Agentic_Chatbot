@@ -1,5 +1,5 @@
 
-from typing import Annotated
+from typing import Annotated, Literal
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from utils.llm import llm, classifier_llm
@@ -23,17 +23,50 @@ os.environ["GLOG_minloglevel"] = "3"
 class State(TypedDict):
     
     messages: Annotated[list[BaseMessage], add_messages]
+    intent : str
     
 # Define classify_query node (that classify user query in travel query or not)
-def classify_query(state: State):
-    """Classify user intent"""
-     # take user query 
+def classify_node(state: State)->Literal["relevent", "irrelevent"]:
     user_message = state["messages"]
+
+    classifier_prompt = f"""
+    You are a strict classifier that decides whether a user query is related to travel.
+
+    Return only one word:
+    - "relevant" — if the query is about flights, hotels, trip planning, destinations, travel recommendations, weather for trips, etc.
+    - "irrelevant" → if the query is about anything else like computers, AI, coding, sports, health, or general questions.
+
+
+    Examples:
+    - "book me a flight to Dubai" → relevant
+    - "best hotels in London" → relevant
+    - "weather in Paris for next week" → relevant
+    - "how to plan a vacation" → relevant
+    - "explain AI workflow" → irrelevant
+    - "write a Python script" → irrelevant
+    - "define computer" → irrelevant
+    - "explain AI workflow" → irrelevant
+    - "write a Python script" → irrelevant
+    - "who is Virat Kohli" → irrelevant
+    - "what is machine learning" → irrelevant
+
+    User query: {user_message}
+
+    Answer with only one label: relevant or irrelevant.
+    """
+
+
+    prompt = [
+    SystemMessage(content="You are a strict classifier for travel-related queries."),
+    HumanMessage(content=classifier_prompt)
+    ]
+
+    # invoke model
+    response = classifier_llm.invoke(prompt)
+    intent = response.content.lower().strip()
     
-    messages = [
-        SystemMessage(content=classifier_prompt), user_message]
-    response = llm.invoke(messages)
-    return {"messages": [response]}
+    return {'intent': intent}
+
 
 # Define chat node (that response to user on travel reletad queries)
 def chat_node(state: State):
@@ -47,7 +80,7 @@ def chat_node(state: State):
     return {'messages': [response]}
 
 # ✅ Define irrelevent node (for non-travel queries)
-def irrelevent_node(state:State):
+def irrelevant_node(state:State):
     return {
         "messages": [
             HumanMessage(
@@ -56,7 +89,17 @@ def irrelevent_node(state:State):
         ]
     }
     
+def check_condition(state: State) -> Literal["chat_node", "irrelevant_node"]:
     
+    if state['intent'] == 'relevant':
+        return 'chat_node'
+    else:
+        return 'irrelevant_node'  
+       
+    
+   
+    
+
 duck_tool = DuckDuckGoSearchRun()
 # print(duck.invoke("current weather in Lahore in Celcius degree"))
 
@@ -84,19 +127,26 @@ checkpointer = SqliteSaver(conn=conn)
 graph = StateGraph(State)
 
 #add nodes
-graph.add_node('chat_node', chat_node)
+graph.add_node("classifier_node", classify_node)
+graph.add_node("chat_node", chat_node)
+graph.add_node("irrelevant_node", irrelevant_node)
 
-# add edges
-graph.add_edge(START,'chat_node')
-graph.add_edge('chat_node',END)
+#add edges
+graph.add_edge(START, "classifier_node")
+
+graph.add_conditional_edges(
+    "classifier_node",
+    check_condition,
+    {
+        "chat_node": "chat_node",
+        "irrelevant_node": "irrelevant_node"
+    }
+)
+
+graph.add_edge("chat_node", END)
+graph.add_edge("irrelevant_node", END)
+
 
 
 chatbot = graph.compile(checkpointer=checkpointer)
 # config1 = {"configurable": {'thread_id': thread_id}}
-
-# initial_state = {
-#      'messages': [HumanMessage(content='define bike in one line')]
-# }
-
-# res = chatbot.invoke(initial_state, config=config1)['messages'][-1].content
-# print(res)

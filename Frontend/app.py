@@ -4,7 +4,7 @@ import sys
 import importlib.util
 import streamlit as st 
 from langchain_core.messages import HumanMessage
-from agents.travel_agent import chatbot
+# from agents.travel_agent import chatbot
 
 
 #  Add parent directory (project root) to import path
@@ -47,7 +47,7 @@ if user_input:
     with st.chat_message('assistant'):
         ai_message = st.write_stream(
             message_chunk.content for message_chunk,metadata in  chatbot.stream(
-             {'messages': [HumanMessage(content= user_input)]},
+            {'messages': [HumanMessage(content= user_input)]},
             config=CONFIG,
             stream_mode='messages'
             ) 

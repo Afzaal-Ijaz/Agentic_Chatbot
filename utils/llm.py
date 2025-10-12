@@ -15,6 +15,6 @@ if not api_key:
 
 
 # Initialize model
-model = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+model = ChatOpenAI(model="gpt-4o", api_key=api_key)
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=gen_api_key)
-classifier_llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=gen_api_key)  # used only for classification
+classifier_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=gen_api_key, temperature=0)  # used only for classification
