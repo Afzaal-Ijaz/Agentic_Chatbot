@@ -1,8 +1,30 @@
 import os
 import requests
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
+from utils.llm import llm
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 load_dotenv()
+
+class FlightQuery(BaseModel):
+    origin: str = Field(description="Departure city or airport")
+    destination: str = Field(description="Arrival city or airport")
+    date: str = Field(description="Travel date in YYYY-MM-DD format if possible")
+
+parser = PydanticOutputParser(pydantic_object=FlightQuery)
+
+prompt = PromptTemplate(
+    template=(
+        "Extract origin, destination, and date from this user query:\n"
+        "{query}\n\n"
+        "{format_instructions}"
+    ),
+    input_variables=["query"],
+    partial_variables={"format_instructions": parser.get_format_instructions()},
+)
+
 
 class AmadeusService:
     def __init__(self, client_id, client_secret):
@@ -29,9 +51,16 @@ class AmadeusService:
         else:
             print("❌ Token request failed:", response.text)
             return None
+        
+    
+    def parse_flight_query(self,user_query: str):
+        input = prompt.format_prompt(query=user_query)
+        output = llm.invoke(input.to_messages())
+        return parser.parse(output.content)
+    
 
     def flight_search(self, origin, destination, date):
-        """Step 2: Search flights"""
+        """Extracts origin, destination, and date from query and searches flights."""
         url = f"{self.base_url}/v2/shopping/flight-offers"
         headers = {"Authorization": f"Bearer {self.access_token}"}
         params = {
@@ -45,18 +74,7 @@ class AmadeusService:
         response = requests.get(url, headers=headers, params=params)
         return response.json()
 
-    # def hotel_search(self, city, check_in, check_out):
-    #     """Step 3: Search hotels"""
-    #     url = f"{self.base_url}/v1/shopping/hotel-offers"
-    #     headers = {"Authorization": f"Bearer {self.access_token}"}
-    #     params = {
-    #         "cityCode": city,
-    #         "checkInDate": check_in,
-    #         "checkOutDate": check_out
-    #     }
 
-    #     response = requests.get(url, headers=headers, params=params)
-    #     return response.json()
     def hotel_search(self, city, check_in, check_out):
         """Search hotels in a given city"""
         self.get_access_token()  # make sure token is valid

@@ -6,11 +6,11 @@ from utils.llm import llm, classifier_llm
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from prompts.system_prompt import classifier_prompt
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.prebuilt import ToolNode,tools_condition
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import tool
+from services.amadeus_service import AmadeusService
 import os
 import requests
 import sqlite3
@@ -42,13 +42,14 @@ def classify_node(state: State)->Literal["relevent", "irrelevent"]:
     - "best hotels in London" → relevant
     - "weather in Paris for next week" → relevant
     - "how to plan a vacation" → relevant
-    - "explain AI workflow" → irrelevant
-    - "write a Python script" → irrelevant
-    - "define computer" → irrelevant
-    - "explain AI workflow" → irrelevant
-    - "write a Python script" → irrelevant
-    - "who is Virat Kohli" → irrelevant
-    - "what is machine learning" → irrelevant
+    - "Tell me about Lahore,Karachi, Turkye, USA, China or any place" → relevant
+    - "find weather of any place to plan a trip" → relevant
+    - "PIA available flights today " → relevant
+    - "write a Python script or any type of code" → irrelevant
+    - "define computer, AI workflow or any question releted to computer" → irrelevant
+    - "recipe of foods" → irrelevant
+    - "who is Virat Kohli, Imran Khan or any popular personality" → irrelevant
+    - "what is the popular news today" → irrelevant
 
     User query: {user_message}
 
@@ -74,7 +75,7 @@ def chat_node(state: State):
     message = state['messages']
     
     # send to llm
-    response = llm.invoke(message)
+    response = llm_with_tools.invoke(message)
     
     # response store in state
     return {'messages': [response]}
@@ -84,7 +85,7 @@ def irrelevant_node(state:State):
     return {
         "messages": [
             HumanMessage(
-                content="Sorry, I can only assist with travel-related queries like flights, hotels, and destinations."
+                content="Sorry, I can only assist with travel-related queries like flights, hotels,tour planing and destinations."
             )
         ]
     }
@@ -99,23 +100,37 @@ def check_condition(state: State) -> Literal["chat_node", "irrelevant_node"]:
     
    
     
+#tools
+def duck_search(query:str)  -> str:
+    """Searches websites to answer the user queries using DuckDuckGoSearchRun."""
+    duck_tool = DuckDuckGoSearchRun()
+    return duck_tool.invoke(query)
+    
+    
+@tool("flight_search")
+def flight_search(query: str) -> str:
+    """Searches for flights from the user query."""
+    try:
+        flight_tool = AmadeusService()
+        parsed = flight_tool.parse_flight_query(query)
+        # flight_tool = AmadeusService()
+        return flight_tool.flight_search(parsed.origin, parsed.destination, parsed.date)
+    except Exception as e:
+        return f"Error parsing flight details: {str(e)}"
 
-duck_tool = DuckDuckGoSearchRun()
-# print(duck.invoke("current weather in Lahore in Celcius degree"))
+
+# 🌤️ Custom tool for weather
+@tool("weather_check")
+def weather_check(destination: str) -> str:
+    """Checks the weather of a given destination."""
+
+    return f"The weather in {destination} is pleasent and sunny with 28°C HOT."
 
 
-# agent = create_react_agent(
-#     model="llm",
-#     tools=[duck_tool],
-#     prompt="You are a helpful travel agent assistant"
-# )
+tools = [duck_search,flight_search, weather_check]
+llm_with_tools = llm.bind_tools(tools=tools)
 
-# # Run the agent
-# agent.invoke(
-#     {"messages": [{"role": "user", "content": "what is the computer in one line"}]}
-# )
-
-# print(State[messages])
+tool_node = ToolNode(tools)
 
 # Path to your existing database folder
 db_path = os.path.join(os.path.dirname(__file__), "..", "database", "chat.db")
@@ -130,6 +145,7 @@ graph = StateGraph(State)
 graph.add_node("classifier_node", classify_node)
 graph.add_node("chat_node", chat_node)
 graph.add_node("irrelevant_node", irrelevant_node)
+graph.add_node("tools",tool_node)
 
 #add edges
 graph.add_edge(START, "classifier_node")
@@ -143,7 +159,8 @@ graph.add_conditional_edges(
     }
 )
 
-graph.add_edge("chat_node", END)
+graph.add_conditional_edges("chat_node", tools_condition)
+graph.add_edge("tools", "chat_node")
 graph.add_edge("irrelevant_node", END)
 
 
