@@ -11,6 +11,8 @@ from langgraph.prebuilt import ToolNode,tools_condition
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import tool
 from services.amadeus_service import AmadeusService
+from services.weather_service import WeatherService
+
 import os
 import requests
 import sqlite3
@@ -111,20 +113,19 @@ def duck_search(query:str)  -> str:
 def flight_search(query: str) -> str:
     """Searches for flights from the user query."""
     try:
-        flight_tool = AmadeusService()
+        flight_tool = AmadeusService(client_id=os.getenv("AMADEUS_CLIENT_ID"),client_secret=os.getenv("AMADEUS_CLIENT_SECRET"))
         parsed = flight_tool.parse_flight_query(query)
-        # flight_tool = AmadeusService()
         return flight_tool.flight_search(parsed.origin, parsed.destination, parsed.date)
     except Exception as e:
-        return f"Error parsing flight details: {str(e)}"
+        return "Try in date format like this YYYY-MM-DD (2025-12-29)."
 
 
 # 🌤️ Custom tool for weather
-@tool("weather_check")
-def weather_check(destination: str) -> str:
-    """Checks the weather of a given destination."""
-
-    return f"The weather in {destination} is pleasent and sunny with 28°C HOT."
+@tool("weather_info")
+def weather_check(city: str) -> str:
+    """Get current weather for a city or any place."""
+    weather_tool = WeatherService()
+    return weather_tool.get_weather(city)
 
 
 tools = [duck_search,flight_search, weather_check]
