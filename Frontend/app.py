@@ -40,7 +40,7 @@ if user_input:
     with st.chat_message('user'):
         st.text(user_input)
 
-    # Call chatbot (object from travel_agent.py)
+   
     with st.chat_message("assistant"):
         # Use a mutable holder so the generator can set/modify it
         status_holder = {"box": None}

@@ -120,11 +120,17 @@ def flight_search(query: str) -> str:
         return "Try in date format like this YYYY-MM-DD (2025-12-29)."
 
 
-# 🌤️ Custom tool for weather
 @tool("weather_info")
-def weather_check(city: str) -> str:
+def weather_check(city: str | dict) -> str:
     """Get current weather for a city or any place."""
     weather_tool = WeatherService()
+
+    if isinstance(city, dict):
+        city = city.get("city") or city.get("location") or list(city.values())[0]
+
+    if not isinstance(city, str):
+        return "⚠️ Please provide a valid city name."
+
     return weather_tool.get_weather(city)
 
 

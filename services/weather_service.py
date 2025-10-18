@@ -1,6 +1,8 @@
 import requests
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 class WeatherService:
     def __init__(self):
         self.api_key = os.getenv("OPENWEATHER_API_KEY")  
@@ -26,3 +28,7 @@ class WeatherService:
 
         except Exception as e:
             return f"Error fetching weather data: {e}"
+        
+# if __name__ == "__main__":
+#     service = WeatherService()
+#     print(service.get_weather("Paris"))

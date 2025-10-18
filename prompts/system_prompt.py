@@ -23,4 +23,4 @@ classifier_prompt = f"""
 
     Answer with only one label: relevant or irrelevant.
     """
-        # User query: {user_message}
+
