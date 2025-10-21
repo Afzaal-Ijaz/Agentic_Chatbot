@@ -20,6 +20,8 @@ spec.loader.exec_module(travel_agent)
 chatbot = travel_agent.chatbot
 
 # ---------------- Streamlit UI ----------------
+
+
 user_input = st.chat_input('Type here')
 
 # Session state setup

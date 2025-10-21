@@ -121,7 +121,7 @@ def flight_search(query: str) -> str:
 
 
 @tool("weather_info")
-def weather_check(city: str | dict) -> str:
+def weather_check(city: str) -> str:
     """Get current weather for a city or any place."""
     weather_tool = WeatherService()
 
