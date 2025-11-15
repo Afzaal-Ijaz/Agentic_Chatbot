@@ -1,85 +1,49 @@
-
+from flask import Flask, render_template, request, jsonify
 import os
 import sys
 import importlib.util
-import streamlit as st 
-from langchain_core.messages import HumanMessage, AIMessage,ToolMessage
-# from agents.travel_agent import chatbot
 
-
-#  Add parent directory (project root) to import path
+# Add parent directory (project root) to import path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-#  Dynamically import travel_agent.py no matter how Streamlit runs
+# Dynamically import travel_agent.py
 agent_path = os.path.join(os.path.dirname(__file__), "..", "agents", "travel_agent.py")
 spec = importlib.util.spec_from_file_location("travel_agent", agent_path)
 travel_agent = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(travel_agent)
 
-#  Access chatbot object from travel_agent.py
+# Access chatbot object from travel_agent.py
 chatbot = travel_agent.chatbot
 
-# ---------------- Streamlit UI ----------------
+app = Flask(__name__, template_folder='templates', static_folder='static')
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-user_input = st.chat_input('Type here')
-
-# Session state setup
-if 'message_history' not in st.session_state:
-    st.session_state['message_history'] = []
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_message = request.json['message']
     
-
-CONFIG = {"configurable": {'thread_id': '1'}}
-
-# Load conversation history
-for message in st.session_state['message_history']:
-    with st.chat_message(message['role']):
-        st.text(message['content'])
-
-if user_input:
-    # Add user message
-    st.session_state['message_history'].append({'role': 'user', 'content': user_input})
-    with st.chat_message('user'):
-        st.text(user_input)
-
-   
-    with st.chat_message("assistant"):
-        # Use a mutable holder so the generator can set/modify it
-        status_holder = {"box": None}
-
-        def ai_only_stream():
-            for message_chunk, metadata in chatbot.stream(
-                {"messages": [HumanMessage(content=user_input)]},
-                config=CONFIG,
-                stream_mode="messages",
-            ):
-                # Lazily create & update the SAME status container when any tool runs
-                if isinstance(message_chunk, ToolMessage):
-                    tool_name = getattr(message_chunk, "name", "tool")
-                    if status_holder["box"] is None:
-                        status_holder["box"] = st.status(
-                            f"🔧 Using `{tool_name}` …", expanded=True
-                        )
-                    else:
-                        status_holder["box"].update(
-                            label=f"🔧 Using `{tool_name}` …",
-                            state="running",
-                            expanded=True,
-                        )
-
-                # Stream ONLY assistant tokens
-                if isinstance(message_chunk, AIMessage):
-                    yield message_chunk.content
-
-        ai_message = st.write_stream(ai_only_stream())
-
-        # Finalize only if a tool was actually used
-        if status_holder["box"] is not None:
-            status_holder["box"].update(
-                label="✅ Tool finished", state="complete", expanded=False
-            )
-
-    # Save assistant message
-    st.session_state["message_history"].append(
-        {"role": "assistant", "content": ai_message}
+    # This is a simplified interaction. You might need to adapt this
+    # based on how your travel_agent.py is structured.
+    # This example assumes a simple call and response.
+    # You may need to manage conversation history/state.
+    
+    from langchain_core.messages import HumanMessage
+    
+    CONFIG = {"configurable": {'thread_id': '1'}}
+    
+    # Get the response from the chatbot
+    response = chatbot.invoke(
+        {"messages": [HumanMessage(content=user_message)]},
+        config=CONFIG,
     )
+    # extract AI message
+    ai_reply = response["messages"][-1].content
+
+    # Process the generator to get the AI message content
+    return jsonify({'response': ai_reply})
+
+if __name__ == '__main__':
+    app.run(debug=True)

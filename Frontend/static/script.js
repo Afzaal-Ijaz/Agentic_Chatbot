@@ -1,0 +1,44 @@
+document.addEventListener("DOMContentLoaded", () => {
+    const chatBox = document.getElementById("chat-box");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        const message = userInput.value.trim();
+        if (message === "") return;
+
+        appendMessage(message, "user");
+        userInput.value = "";
+
+        fetch("/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message: message }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            appendMessage(data.response, "bot");
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            appendMessage("Sorry, something went wrong.", "bot");
+        });
+    }
+
+    function appendMessage(message, sender) {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message", `${sender}-message`);
+        messageElement.innerText = message;
+        chatBox.appendChild(messageElement);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+});
