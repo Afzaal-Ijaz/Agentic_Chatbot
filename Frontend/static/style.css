@@ -1,7 +1,7 @@
 body {
     font-family: sans-serif;
     margin: 0;
-    background-color: #f4f4f4;
+    background-color: rgb(206, 160, 73);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -20,13 +20,13 @@ body {
 #name{
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     font-style: oblique;
-    color: rgb(142, 216, 142);
+    color: rgb(218, 181, 90);
 }
 
 .instructions {
     flex: 1;
-    background-color: #333;
-    color: white;
+    background-image: url(https://i.pinimg.com/736x/74/f6/4a/74f64ac1e944848f758b74640700de4d.jpg);
+    color: black;
     padding: 20px;
 }
 
@@ -79,6 +79,10 @@ body {
     cursor: pointer;
     margin-left: 10px;
 }
+#send-btn:hover{
+    color: black;
+    background-color: rgb(218, 181, 90);
+}
 
 .message {
     margin-bottom: 15px;
@@ -93,7 +97,7 @@ body {
 }
 
 .bot-message {
-    background-color: #2ed230;
+    background-color: rgb(218, 181, 90);
     align-self: flex-start;
 }
 

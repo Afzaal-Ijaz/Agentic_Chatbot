@@ -103,37 +103,7 @@ if __name__ == "__main__":
         client_id=os.getenv("AMADEUS_CLIENT_ID"),
         client_secret=os.getenv("AMADEUS_CLIENT_SECRET")
     )
-    #------------------------------------------
-    #flights search
-    #------------------------------------------
-    
-    # result = amadeus.flight_search('LON', 'PAR', '2025-12-15')
 
-    # flights = result.get("data", [])
-
-    # for flight in flights:
-    #     # Basic flight info
-    #     price = flight["price"]["total"]
-    #     currency = flight["price"]["currency"]
-        
-    #     # Itinerary info (take first segment only for now)
-    #     first_segment = flight["itineraries"][0]["segments"][0]
-    #     last_segment = flight["itineraries"][0]["segments"][-1]
-
-    #     origin = first_segment["departure"]["iataCode"]
-    #     destination = last_segment["arrival"]["iataCode"]
-    #     departure_time = first_segment["departure"]["at"]
-    #     arrival_time = last_segment["arrival"]["at"]
-    #     airline = first_segment["carrierCode"]
-
-    #     print(f"\n✈️  {airline}: {origin} → {destination}")
-    #     print(f"   🕒 Departure: {departure_time}")
-    #     print(f"   🕓 Arrival: {arrival_time}")
-    #     print(f"   💰 Price: {price} {currency}")
-   
-    #------------------------------------------
-    # hotels search
-    #------------------------------------------
-    result = amadeus.hotel_search("PAR", "2025-12-15", "2025-12-20")
-    print(result)
+    # result = amadeus.hotel_search("PAR", "2025-12-15", "2025-12-20")
+    # print(result)
 

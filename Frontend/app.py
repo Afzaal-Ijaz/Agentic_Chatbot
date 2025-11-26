@@ -25,11 +25,6 @@ def index():
 def chat():
     user_message = request.json['message']
     
-    # This is a simplified interaction. You might need to adapt this
-    # based on how your travel_agent.py is structured.
-    # This example assumes a simple call and response.
-    # You may need to manage conversation history/state.
-    
     from langchain_core.messages import HumanMessage
     
     CONFIG = {"configurable": {'thread_id': '1'}}
