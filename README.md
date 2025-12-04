@@ -22,13 +22,15 @@ LangChain  and LangGraph– to manage AI workflow and LLM interactions
 
 Google Gemini / OpenAI GPT models – for natural language understanding
 
-Streamlit / FastAPI  – for frontend or API interface
+HTML,CSS,Javascripts / Flask  – for frontend or API interface
 
 ## 🧠 Future Enhancements
 
 🌤️ Live weather updates
 
 💰 Budget-based itinerary suggestions
+
+🧳 Flights information
 
 🧳 Multi-city trip planning
 
