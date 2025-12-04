@@ -44,3 +44,4 @@ HTML,CSS,Javascripts / Flask  – for frontend or API interface
 
 4 Response Generation: AI composes a helpful and structured travel plan for the user.
 
+![img alt](https://github.com/Afzaal-Ijaz/Agentic_Chatbot/blob/main/Travel_agent_1.png?raw=true)
